@@ -1,25 +1,113 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+title: "activity_assignment"
+author: "Supriya Sharma"
+date: "3/26/2017"
+output:
+  html_document: default
+  pdf_document: default
 ---
+Activity assignment
+==================================
+## 1. Read the activity report
+```{r}
+data <- read.csv(file="activity.csv", header = T, sep=",")
+```
+
+## 2. Histogram of the total number of steps taken each day
+```{r}
+steps <-aggregate(data$steps, by= list(data$date),FUN = sum, na.rm=FALSE)
+hist(steps$x, 
+     main= "Total number of steps taken each day", 
+     xlab= "steps each day", 
+     col= "green")
+```
+
+## 3. Mean and median number of steps taken each day
+```{r}
+mean_steps <- mean(steps$x, na.rm=T)
+mean_steps
+median_steps <- median(steps$x, na.rm=T)
+median_steps
+```
+
+## 4. Time series plot of the average number of steps taken
+```{r}
+steps_int <-aggregate(data$steps, by= list(data$interval),FUN = mean, na.rm=TRUE)
+plot(x= steps_int[,1],
+     y= steps_int[,2],
+     main= "Average number of steps taken per interval", 
+     type = "l",
+     col="blue", 
+     xlab= "Time interval", 
+     ylab ="steps")
+```
 
 
-## Loading and preprocessing the data
+## 5. The 5-minute interval that, on average, contains the maximum number of steps
+```{r}
+int_maximum_steps <- steps_int[which.max(steps_int[,2]),1]
+int_maximum_steps
+```
+       
+## 6. Code to describe and show a strategy for imputing missing data
+```{r}
+missing_NA <- sum(is.na(data$steps))
 
+## combined activity data with steps interval to eventually calculate mean
+data_imputated <- cbind(data, steps_int[,2])
+names(data_imputated)[4] <- c("mean")
+data_imputated$steps <- ifelse( is.na(data_imputated$steps), data_imputated$mean, data_imputated$steps)
+```
 
+## 7. Histogram of the total number of steps taken each day after missing values are imputed
+```{r}
+## total number of steps per day in imputated data
+data_imputated_stepsPerDay <- aggregate(data_imputated$steps, by=list(data_imputated$date), FUN=sum)
 
-## What is mean total number of steps taken per day?
+## mean of total number of steps per day in imputated data
+data_imputated_stepsPerDayMean <- mean(data_imputated_stepsPerDay$x)
+data_imputated_stepsPerDayMean
 
+## median of total number of steps per day in imputated data
+data_imputated_stepsPerDayMedian <- median(data_imputated_stepsPerDay$x,)
+data_imputated_stepsPerDayMedian
 
+hist(data_imputated_stepsPerDay$x, 
+     breaks=20,
+     main="Total number of steps take per day", 
+     col="gold", 
+     xlab="Steps taken")
+```
 
-## What is the average daily activity pattern?
+## 8. Panel plot comparing the average number of steps taken per 5-minute interval across weekdays and weekends
 
+```{r}
+data_imputated$date <- strptime(data_imputated$date, "%Y-%m-%d")
+data_imputated$weekend <- (weekdays(data_imputated$date) %in% c("Sunday", "Saturday"))
 
+data_weekend <-data_imputated[data_imputated$weekend == TRUE,]
+data_weekday <- data_imputated[data_imputated$weekend == FALSE,]
 
-## Imputing missing values
+## average of steps taken on weekends and weekdays
+av_weekend_steps <- aggregate(data_weekend$steps, by=list(data_weekend$interval), FUN=mean)
+av_weekday_steps <- aggregate(data_weekday$steps, by=list(data_weekday$interval), FUN=mean)
 
+par(mfrow=c(2,1))
 
+plot( x=av_weekend_steps[,1], 
+      y=av_weekend_steps[,2], 
+      type= "l",
+      col="purple",
+      main="Weekend average steps per interval",
+      ylab="Average steps", 
+      xlab="Interval ID")
 
-## Are there differences in activity patterns between weekdays and weekends?
+plot( x=av_weekday_steps[,1], 
+      y=av_weekday_steps[,2],
+      type= "l",
+      col="magenta",
+      main="Weekday average steps per interval",
+      ylab="Average steps", 
+      xlab="Interval ID")
+```
+
